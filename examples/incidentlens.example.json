@@ -1,0 +1,44 @@
+{
+  "elasticsearch": {
+    "url": "http://localhost:9200",
+    "indexes": ["logs-*", "traces-*"],
+    "timeField": "@timestamp",
+    "messageFields": ["message", "error.message", "log.message"],
+    "serviceField": "service.name",
+    "environmentField": "service.environment",
+    "hostField": "host.name",
+    "severityField": "log.level",
+    "maxDocuments": 50,
+    "apiKey": null,
+    "username": null,
+    "password": null
+  },
+  "prometheus": {
+    "url": "http://localhost:9090",
+    "step": "60s",
+    "queries": [
+      {
+        "name": "HTTP 5xx rate",
+        "query": "sum by (job, instance) (rate(http_requests_total{status=~\"5..\"}[5m]))",
+        "threshold": 0.1,
+        "severity": "warning"
+      },
+      {
+        "name": "High request latency p95",
+        "query": "histogram_quantile(0.95, sum by (le, job) (rate(http_request_duration_seconds_bucket[5m])))",
+        "threshold": 1.0,
+        "severity": "warning"
+      },
+      {
+        "name": "Container CPU usage",
+        "query": "sum by (pod) (rate(container_cpu_usage_seconds_total{container!=\"\"}[5m]))",
+        "threshold": 0.8,
+        "severity": "info"
+      }
+    ]
+  },
+  "report": {
+    "maxTimelineItems": 40,
+    "includeRaw": false
+  }
+}
