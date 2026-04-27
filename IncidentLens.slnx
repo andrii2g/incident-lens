@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/IncidentLens.Cli/IncidentLens.Cli.csproj" />
+  <Project Path="src/IncidentLens.Core/IncidentLens.Core.csproj" />
+</Solution>
