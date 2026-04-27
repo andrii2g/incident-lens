@@ -1,7 +1,7 @@
-using IncidentLens.Core.Connectors;
-using IncidentLens.Core.Models;
+using A2G.IncidentLens.Core.Connectors;
+using A2G.IncidentLens.Core.Models;
 
-namespace IncidentLens.Core;
+namespace A2G.IncidentLens.Core;
 
 public sealed class IncidentLensRunner
 {

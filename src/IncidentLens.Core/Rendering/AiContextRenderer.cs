@@ -1,7 +1,7 @@
 using System.Text;
-using IncidentLens.Core.Models;
+using A2G.IncidentLens.Core.Models;
 
-namespace IncidentLens.Core.Rendering;
+namespace A2G.IncidentLens.Core.Rendering;
 
 public sealed class AiContextRenderer
 {
@@ -27,7 +27,7 @@ public sealed class AiContextRenderer
         sb.AppendLine();
         sb.AppendLine("Please return:");
         sb.AppendLine();
-        sb.AppendLine("1. Executive summary in 3–5 bullets.");
+        sb.AppendLine("1. Executive summary in 3-5 bullets.");
         sb.AppendLine("2. Timeline of important events.");
         sb.AppendLine("3. Evidence-backed hypotheses only.");
         sb.AppendLine("4. Missing evidence / blind spots.");
@@ -44,25 +44,29 @@ public sealed class AiContextRenderer
 
         foreach (var item in evidence)
         {
-            sb.AppendLine($"### {item.Timestamp:O} — {item.Source} / {item.Kind} / {item.Severity}");
+            sb.AppendLine($"### {item.Timestamp:O} - {item.Source} / {item.Kind} / {item.Severity}");
             sb.AppendLine();
             sb.AppendLine($"- Title: {TextRedactor.Redact(item.Title)}");
             if (!string.IsNullOrWhiteSpace(item.Summary))
             {
                 sb.AppendLine($"- Summary: {TextRedactor.Redact(item.Summary)}");
             }
+
             if (!string.IsNullOrWhiteSpace(item.Service))
             {
                 sb.AppendLine($"- Service: {TextRedactor.Redact(item.Service)}");
             }
+
             if (!string.IsNullOrWhiteSpace(item.Environment))
             {
                 sb.AppendLine($"- Environment: {TextRedactor.Redact(item.Environment)}");
             }
+
             if (!string.IsNullOrWhiteSpace(item.Host))
             {
                 sb.AppendLine($"- Host: {TextRedactor.Redact(item.Host)}");
             }
+
             if (item.Labels.Count > 0)
             {
                 sb.AppendLine("- Labels:");
@@ -71,6 +75,7 @@ public sealed class AiContextRenderer
                     sb.AppendLine($"  - {label.Key}: {label.Value}");
                 }
             }
+
             sb.AppendLine();
         }
 

@@ -1,4 +1,4 @@
-namespace IncidentLens.Core.Models;
+namespace A2G.IncidentLens.Core.Models;
 
 public sealed class IncidentRequest
 {

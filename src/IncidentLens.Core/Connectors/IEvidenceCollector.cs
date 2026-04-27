@@ -1,6 +1,6 @@
-using IncidentLens.Core.Models;
+using A2G.IncidentLens.Core.Models;
 
-namespace IncidentLens.Core.Connectors;
+namespace A2G.IncidentLens.Core.Connectors;
 
 public interface IEvidenceCollector
 {

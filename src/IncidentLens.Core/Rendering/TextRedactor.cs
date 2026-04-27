@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace IncidentLens.Core.Rendering;
+namespace A2G.IncidentLens.Core.Rendering;
 
 internal static partial class TextRedactor
 {

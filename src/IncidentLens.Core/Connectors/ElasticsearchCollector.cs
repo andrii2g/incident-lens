@@ -2,9 +2,9 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using IncidentLens.Core.Models;
+using A2G.IncidentLens.Core.Models;
 
-namespace IncidentLens.Core.Connectors;
+namespace A2G.IncidentLens.Core.Connectors;
 
 public sealed class ElasticsearchCollector : IEvidenceCollector
 {
@@ -81,7 +81,7 @@ public sealed class ElasticsearchCollector : IEvidenceCollector
                 ["simple_query_string"] = new JsonObject
                 {
                     ["query"] = request.Symptom,
-                    ["fields"] = ToJsonArray(_options.MessageFields.Length == 0 ? new[] { "message" } : _options.MessageFields),
+                    ["fields"] = ToJsonArray(_options.MessageFields.Length == 0 ? ["message"] : _options.MessageFields),
                     ["default_operator"] = "and"
                 }
             });
@@ -151,6 +151,7 @@ public sealed class ElasticsearchCollector : IEvidenceCollector
                 array.Add(value);
             }
         }
+
         return array;
     }
 
@@ -198,8 +199,9 @@ public sealed class ElasticsearchCollector : IEvidenceCollector
             var labels = new Dictionary<string, string>();
             if (!string.IsNullOrWhiteSpace(index))
             {
-                labels["index"] = index!;
+                labels["index"] = index;
             }
+
             if (score > 0)
             {
                 labels["elastic_score"] = score.ToString("G4", System.Globalization.CultureInfo.InvariantCulture);
@@ -261,6 +263,7 @@ public sealed class ElasticsearchCollector : IEvidenceCollector
                 return value;
             }
         }
+
         return null;
     }
 
@@ -270,7 +273,8 @@ public sealed class ElasticsearchCollector : IEvidenceCollector
         {
             return value;
         }
-        return value[..Math.Max(0, maxLength - 1)] + "…";
+
+        return value[..Math.Max(0, maxLength - 3)] + "...";
     }
 
     private static string? ExtractString(JsonElement root, string? path)

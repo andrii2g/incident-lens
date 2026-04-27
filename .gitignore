@@ -6,3 +6,6 @@ out/
 *.suo
 .vs/
 .DS_Store
+
+incidentlens.json
+*.local.json

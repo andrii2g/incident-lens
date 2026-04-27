@@ -1,7 +1,7 @@
 using System.Text;
-using IncidentLens.Core.Models;
+using A2G.IncidentLens.Core.Models;
 
-namespace IncidentLens.Core.Rendering;
+namespace A2G.IncidentLens.Core.Rendering;
 
 public sealed class MarkdownReportRenderer
 {
@@ -17,7 +17,7 @@ public sealed class MarkdownReportRenderer
         sb.AppendLine("## Request");
         sb.AppendLine();
         sb.AppendLine($"- **Symptom:** {EscapeMarkdown(TextRedactor.Redact(request.Symptom))}");
-        sb.AppendLine($"- **Window:** {request.FromUtc:O} → {request.ToUtc:O}");
+        sb.AppendLine($"- **Window:** {request.FromUtc:O} -> {request.ToUtc:O}");
         sb.AppendLine($"- **Service:** {EscapeMarkdown(request.Service ?? "not specified")}");
         sb.AppendLine($"- **Environment:** {EscapeMarkdown(request.Environment ?? "not specified")}");
         sb.AppendLine($"- **Generated:** {result.GeneratedAtUtc:O}");
@@ -40,14 +40,15 @@ public sealed class MarkdownReportRenderer
             {
                 sb.AppendLine($"| {EscapeMarkdown(group.Key)} | {group.Count()} |");
             }
-            sb.AppendLine();
 
+            sb.AppendLine();
             sb.AppendLine("| Severity | Count |");
             sb.AppendLine("|---|---:|");
             foreach (var group in evidence.GroupBy(x => x.Severity).OrderByDescending(g => g.Count()))
             {
                 sb.AppendLine($"| {EscapeMarkdown(group.Key)} | {group.Count()} |");
             }
+
             sb.AppendLine();
         }
 
@@ -64,11 +65,11 @@ public sealed class MarkdownReportRenderer
                          .ThenByDescending(x => x.RelevanceScore)
                          .Take(12))
             {
-                sb.AppendLine($"- **{EscapeMarkdown(item.Severity)}** from **{EscapeMarkdown(item.Source)}** at `{item.Timestamp:O}` — {EscapeMarkdown(TextRedactor.Redact(item.Title))}");
+                sb.AppendLine($"- **{EscapeMarkdown(item.Severity)}** from **{EscapeMarkdown(item.Source)}** at `{item.Timestamp:O}` - {EscapeMarkdown(TextRedactor.Redact(item.Title))}");
             }
         }
-        sb.AppendLine();
 
+        sb.AppendLine();
         sb.AppendLine("## Timeline");
         sb.AppendLine();
         if (evidence.Count == 0)
@@ -89,8 +90,8 @@ public sealed class MarkdownReportRenderer
                 sb.AppendLine($"| ... | ... | ... | {evidence.Count - maxTimelineItems} more item(s) omitted by report limit | ");
             }
         }
-        sb.AppendLine();
 
+        sb.AppendLine();
         sb.AppendLine("## Missing Data / Limits");
         sb.AppendLine();
         sb.AppendLine("- This report only includes configured Elasticsearch indexes/data streams and configured Prometheus queries.");
@@ -103,7 +104,7 @@ public sealed class MarkdownReportRenderer
         sb.AppendLine();
         if (evidence.Count == 0)
         {
-            sb.AppendLine("- Widen the time range by 15–30 minutes on both sides.");
+            sb.AppendLine("- Widen the time range by 15-30 minutes on both sides.");
             sb.AppendLine("- Remove or loosen the symptom text filter.");
             sb.AppendLine("- Confirm the Elasticsearch index/data stream names and timestamp field.");
             sb.AppendLine("- Confirm Prometheus query labels match the target service/environment.");

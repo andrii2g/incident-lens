@@ -1,7 +1,7 @@
 using System.Text;
-using IncidentLens.Core.Models;
+using A2G.IncidentLens.Core.Models;
 
-namespace IncidentLens.Core.Rendering;
+namespace A2G.IncidentLens.Core.Rendering;
 
 public sealed class MermaidTimelineRenderer
 {
