@@ -1,8 +1,9 @@
+using A2G.IncidentLens.Core.Models;
+using Serilog;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using A2G.IncidentLens.Core.Models;
 
 namespace A2G.IncidentLens.Core.Connectors;
 
@@ -10,21 +11,25 @@ public sealed class ElasticsearchCollector : IEvidenceCollector
 {
     private readonly ElasticsearchOptions _options;
     private readonly HttpClient _httpClient;
+    private readonly ILogger _logger;
 
-    public ElasticsearchCollector(ElasticsearchOptions options, HttpClient httpClient)
+    public ElasticsearchCollector(ElasticsearchOptions options, HttpClient httpClient, ILogger logger)
     {
         _options = options;
         _httpClient = httpClient;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<EvidenceItem>> CollectAsync(IncidentRequest request, CancellationToken cancellationToken)
     {
         if (_options.Indexes.Length == 0)
         {
+            _logger.Information("Skipping Elasticsearch collector because no indexes are configured");
             return [];
         }
 
         var endpoint = BuildEndpoint();
+        _logger.Information("Querying Elasticsearch endpoint {Endpoint}", endpoint);
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
         AddAuthentication(httpRequest);
 
@@ -36,15 +41,22 @@ public sealed class ElasticsearchCollector : IEvidenceCollector
 
         if (!response.IsSuccessStatusCode)
         {
+            _logger.Warning(
+                "Elasticsearch request failed with status {StatusCode} {ReasonPhrase}",
+                (int)response.StatusCode,
+                response.ReasonPhrase);
             return [CreateCollectorError(request, $"Elasticsearch request failed: {(int)response.StatusCode} {response.ReasonPhrase}", json)];
         }
 
         try
         {
-            return ParseSearchResponse(request, json);
+            var evidence = ParseSearchResponse(request, json);
+            _logger.Information("Elasticsearch collector parsed {EvidenceCount} evidence item(s)", evidence.Count);
+            return evidence;
         }
         catch (Exception ex)
         {
+            _logger.Error(ex, "Could not parse Elasticsearch response");
             return [CreateCollectorError(request, $"Could not parse Elasticsearch response: {ex.Message}", null)];
         }
     }

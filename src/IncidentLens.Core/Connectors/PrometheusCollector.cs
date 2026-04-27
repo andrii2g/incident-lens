@@ -1,6 +1,7 @@
+using A2G.IncidentLens.Core.Models;
+using Serilog;
 using System.Globalization;
 using System.Text.Json;
-using A2G.IncidentLens.Core.Models;
 
 namespace A2G.IncidentLens.Core.Connectors;
 
@@ -8,17 +9,20 @@ public sealed class PrometheusCollector : IEvidenceCollector
 {
     private readonly PrometheusOptions _options;
     private readonly HttpClient _httpClient;
+    private readonly ILogger _logger;
 
-    public PrometheusCollector(PrometheusOptions options, HttpClient httpClient)
+    public PrometheusCollector(PrometheusOptions options, HttpClient httpClient, ILogger logger)
     {
         _options = options;
         _httpClient = httpClient;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<EvidenceItem>> CollectAsync(IncidentRequest request, CancellationToken cancellationToken)
     {
         if (_options.Queries.Length == 0)
         {
+            _logger.Information("Skipping Prometheus collector because no queries are configured");
             return [];
         }
 
@@ -27,25 +31,38 @@ public sealed class PrometheusCollector : IEvidenceCollector
         {
             if (string.IsNullOrWhiteSpace(query.Query))
             {
+                _logger.Warning("Skipping Prometheus query {QueryName} because the query text is empty", query.Name);
                 continue;
             }
 
             var endpoint = BuildEndpoint(request, query);
+            _logger.Information("Querying Prometheus for {QueryName} via {Endpoint}", query.Name, endpoint);
             using var response = await _httpClient.GetAsync(endpoint, cancellationToken);
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
+                _logger.Warning(
+                    "Prometheus query {QueryName} failed with status {StatusCode} {ReasonPhrase}",
+                    query.Name,
+                    (int)response.StatusCode,
+                    response.ReasonPhrase);
                 evidence.Add(CreateCollectorError(query, $"Prometheus request failed: {(int)response.StatusCode} {response.ReasonPhrase}", json));
                 continue;
             }
 
             try
             {
-                evidence.AddRange(ParseQueryRangeResponse(query, json));
+                var queryEvidence = ParseQueryRangeResponse(query, json);
+                evidence.AddRange(queryEvidence);
+                _logger.Information(
+                    "Prometheus query {QueryName} produced {EvidenceCount} evidence item(s)",
+                    query.Name,
+                    queryEvidence.Count);
             }
             catch (Exception ex)
             {
+                _logger.Error(ex, "Could not parse Prometheus response for {QueryName}", query.Name);
                 evidence.Add(CreateCollectorError(query, $"Could not parse Prometheus response for '{query.Name}': {ex.Message}", null));
             }
         }

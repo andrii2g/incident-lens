@@ -1,5 +1,5 @@
-using System.Text;
 using A2G.IncidentLens.Core.Models;
+using System.Text;
 
 namespace A2G.IncidentLens.Core.Rendering;
 

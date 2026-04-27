@@ -4,8 +4,27 @@ using System.Text.Json;
 using A2G.IncidentLens.Core;
 using A2G.IncidentLens.Core.Models;
 using A2G.IncidentLens.Core.Rendering;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.SystemConsole.Themes;
 
-return await BuildCommand().Parse(args).InvokeAsync();
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        theme: AnsiConsoleTheme.Code,
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
+try
+{
+    return await BuildCommand().Parse(args).InvokeAsync();
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
+}
 
 static RootCommand BuildCommand()
 {
@@ -78,6 +97,16 @@ static RootCommand BuildCommand()
                 throw new ArgumentException("Missing output directory.");
             }
 
+            var logger = Log.ForContext("Command", "incidentlens");
+            logger.Information(
+                "Starting IncidentLens run with config {ConfigPath}, output {OutputDirectory}, window {FromUtc} -> {ToUtc}, service {Service}, environment {Environment}",
+                configPath.FullName,
+                outputDirectory.FullName,
+                from.ToUniversalTime(),
+                to.ToUniversalTime(),
+                service ?? "<unspecified>",
+                environment ?? "<unspecified>");
+
             var jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
@@ -98,13 +127,14 @@ static RootCommand BuildCommand()
             };
 
             outputDirectory.Create();
+            logger.Information("Using output directory {OutputDirectory}", outputDirectory.FullName);
 
             using var httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromSeconds(60)
             };
 
-            var runner = new IncidentLensRunner(config, httpClient);
+            var runner = new IncidentLensRunner(config, httpClient, logger.ForContext<IncidentLensRunner>());
             var result = await runner.RunAsync(request, cancellationToken);
 
             var evidencePath = Path.Combine(outputDirectory.FullName, "evidence.json");
@@ -117,16 +147,33 @@ static RootCommand BuildCommand()
             await File.WriteAllTextAsync(mermaidPath, new MermaidTimelineRenderer().Render(result, config), cancellationToken);
             await File.WriteAllTextAsync(aiContextPath, new AiContextRenderer().Render(result, config), cancellationToken);
 
-            Console.WriteLine("IncidentLens run completed.");
-            Console.WriteLine($"Evidence:   {evidencePath}");
-            Console.WriteLine($"Report:     {reportPath}");
-            Console.WriteLine($"Mermaid:    {mermaidPath}");
-            Console.WriteLine($"AI context: {aiContextPath}");
+            var collectorErrors = result.Evidence.Count(x => x.Kind == "collector-error");
+            if (collectorErrors > 0)
+            {
+                logger.Warning(
+                    "IncidentLens run completed with {EvidenceCount} evidence item(s) and {CollectorErrorCount} collector error(s). Artifacts were written to {OutputDirectory}",
+                    result.Evidence.Count,
+                    collectorErrors,
+                    outputDirectory.FullName);
+            }
+            else
+            {
+                logger.Information(
+                    "IncidentLens run completed successfully with {EvidenceCount} evidence item(s). Artifacts were written to {OutputDirectory}",
+                    result.Evidence.Count,
+                    outputDirectory.FullName);
+            }
+
+            logger.Information("Evidence: {EvidencePath}", evidencePath);
+            logger.Information("Report: {ReportPath}", reportPath);
+            logger.Information("Mermaid: {MermaidPath}", mermaidPath);
+            logger.Information("AI context: {AiContextPath}", aiContextPath);
             return 0;
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine(ex.Message);
+            Log.ForContext("Command", "incidentlens")
+                .Error(ex, "IncidentLens run failed");
             return 1;
         }
     });

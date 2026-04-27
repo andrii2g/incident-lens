@@ -5,4 +5,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>A2G.IncidentLens.Core</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="4.3.1" />
+  </ItemGroup>
 </Project>
